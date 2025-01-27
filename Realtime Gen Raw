@@ -1,0 +1,72 @@
+// Combined functionality for image downloading and button clicking
+(function() {
+  // Initialize processed URLs
+  if (!window.processedUrls) {
+    window.processedUrls = JSON.parse(localStorage.getItem('processedUrls')) || [];
+  }
+
+  // Function to generate a random ID similar to "4AAQSkZJRgABAQAAAQABAAD"
+  function generateRandomId(length = 28) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  function normalizeUrl(url) {
+    const parsedUrl = new URL(url);
+    return parsedUrl.origin + parsedUrl.pathname;
+  }
+
+  // Function to download images
+  function downloadImage() {
+    const image = document.querySelector('img:nth-child(1)'); // Target the first image
+    if (image) {
+      const imageUrl = image.src;
+      const normalizedUrl = normalizeUrl(imageUrl);
+      if (!window.processedUrls.includes(normalizedUrl)) {
+        const filename = generateRandomId(); // Generate a random filename
+        fetch(imageUrl)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.processedUrls.push(normalizedUrl);
+            localStorage.setItem('processedUrls', JSON.stringify(window.processedUrls));
+          })
+          .catch(error => {});
+      }
+    }
+  }
+
+  // Function to automatically click a button
+  function autoClickButton(selector, interval) {
+    setInterval(function() {
+      const button = document.querySelector(selector); // Find the button
+      if (button) {
+        button.click(); // Click the button
+      }
+    }, interval);
+  }
+
+  // Initial image download
+  downloadImage();
+
+  // Check for new images every 300ms
+  setInterval(downloadImage, 300);
+
+  // Start clicking the button every 1 second
+  autoClickButton('.chakra-button__group:nth-child(1) > .css-95re1', 300);
+})();
